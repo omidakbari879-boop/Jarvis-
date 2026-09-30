@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J.A.R.V.I.S. // AI Web OS</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Orbitron, Rajdhani, Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            bg: '#030a12',
+                            card: 'rgba(6, 18, 33, 0.75)',
+                            border: 'rgba(0, 243, 255, 0.25)',
+                            cyan: '#00f3ff',
+                            cyanGlow: 'rgba(0, 243, 255, 0.5)',
+                            green: '#00ff66',
+                            orange: '#ffaa00',
+                            red: '#ff3366',
+                            purple: '#9d00ff'
+                        }
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        rajdhani: ['Rajdhani', 'sans-serif'],
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --glow-color: #00f3ff;
+            --bg-dark: #030a12;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: #e0f7fc;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        /* Sci-Fi HUD Borders and Visual effects */
+        .hud-border {
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.08), inset 0 0 15px rgba(0, 243, 255, 0.05);
+            backdrop-filter: blur(12px);
+            position: relative;
+        }
+
+        .hud-border::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px;
+            width: 8px; height: 8px;
+            border-top: 2px solid #00f3ff;
+            border-left: 2px solid #00f3ff;
+        }
+
+        .hud-border::after {
+            content: '';
+            position: absolute;
+            bottom: -2px; right: -2px;
+            width: 8px; height: 8px;
+            border-bottom: 2px solid #00f3ff;
+            border-right: 2px solid #00f3ff;
+        }
+
+        .text-glow {
+            text-shadow: 0 0 8px rgba(0, 243, 255, 0.7);
+        }
+
+        .text-glow-green {
+            text-shadow: 0 0 8px rgba(0, 255, 102, 0.7);
+        }
+
+        .text-glow-red {
+            text-shadow: 0 0 8px rgba(255, 51, 102, 0.7);
+        }
+
+        /* Scanline Overlay */
+        .scanline-overlay {
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0, 243, 255, 0.03) 50%,
+                rgba(0, 243, 255, 0.03)
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(3, 10, 18, 0.8);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 243, 255, 0.4);
+            border-radius: 2px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 243, 255, 0.8);
+        }
+
+        /* Dynamic Animations */
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.03); }
+        }
+
+        .animate-pulse-glow {
+            animation: pulseGlow 3s infinite ease-in-out;
+        }
+
+        /* Futuristic HUD Corner Cut */
+        .corner-cut {
+            clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px));
+        }
+
+        /* Canvas Overlay Container */
+        #bgCanvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between relative overflow-hidden bg-cyber-bg text-slate-100">
+
+    <canvas id="bgCanvas"></canvas>
+    <div class="scanline-overlay fixed inset-0 z-10"></div>
+
+    <div id="bootScreen" class="fixed inset-0 z-50 bg-[#02060d] flex flex-col items-center justify-center p-6 text-cyber-cyan font-orbitron transition-opacity duration-700">
+        <div class="relative mb-8">
+            <div class="w-32 h-32 rounded-full border-2 border-cyber-cyan border-t-transparent animate-spin"></div>
+            <div class="absolute inset-0 flex items-center justify-center">
+                <i class="fa-solid fa-microchip text-4xl text-cyber-cyan animate-pulse"></i>
+            </div>
+        </div>
+        <h1 class="text-3xl font-black tracking-widest text-glow mb-2">J.A.R.V.I.S. OS v4.2</h1>
+        <p class="text-xs font-rajdhani text-slate-400 tracking-wider mb-6">MARK V QUANTUM CORE INITIALIZING</p>
+        
+        <div class="w-80 max-w-full bg-slate-900 border border-cyber-border rounded overflow-hidden p-1 mb-4">
+            <div id="bootProgressBar" class="h-2 bg-cyber-cyan w-0 transition-all duration-300 shadow-[0_0_10px_#00f3ff]"></div>
+        </div>
+
+        <div id="bootLog" class="h-24 font-mono text-xs text-cyber-cyan/80 w-80 max-w-full overflow-hidden flex flex-col justify-end text-left">
+            <p>> Loading kernel modules...</p>
+        </div>
+
+        <button id="startSysBtn" onclick="app.completeBoot()" class="hidden mt-6 px-8 py-3 bg-cyber-cyan/20 border border-cyber-cyan text-cyber-cyan font-bold tracking-widest hover:bg-cyber-cyan hover:text-black transition-all rounded shadow-[0_0_20px_rgba(0,243,255,0.4)]">
+            SYSTEM STARTEN <i class="fa-solid fa-power-off ml-2"></i>
+        </button>
+    </div>
+
+    <header class="relative z-20 w-full bg-cyber-card/90 border-b border-cyber-border px-4 py-2 flex flex-wrap items-center justify-between gap-4 backdrop-blur-md">
+        <!-- Brand & Core Status -->
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-cyber-cyan/10 border border-cyber-cyan flex items-center justify-center text-cyber-cyan shadow-[0_0_10px_rgba(0,243,255,0.3)]">
+                <i class="fa-solid fa-brain text-lg"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="font-orbitron font-bold tracking-wider text-base text-glow text-cyber-cyan">J.A.R.V.I.S.</span>
+                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyber-cyan/10 text-cyber-cyan border border-cyber-cyan/30">ONLINE</span>
+                </div>
+                <span id="systemStateBadge" class="text-xs font-rajdhani text-slate-400 tracking-wider">STATUS: IDLE</span>
+            </div>
+        </div>
+
+        <!-- Quick Status Metrics -->
+        <div class="hidden md:flex items-center gap-6 text-xs font-mono">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-key text-cyber-cyan"></i>
+                <span>API KEY:</span>
+                <span id="headerApiKeyStatus" class="text-cyber-green">GÜLTIG</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-microphone text-cyber-cyan"></i>
+                <span>MIC:</span>
+                <span id="headerMicStatus" class="text-slate-400">INAKTIV</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-hands-clapping text-cyber-cyan"></i>
+                <span>DOUBLE-CLAP:</span>
+                <span id="headerClapStatus" class="text-cyber-green">AKTIV</span>
+            </div>
+        </div>
+
+        <!-- Header Actions & Clock -->
+        <div class="flex items-center gap-3">
+            <button onclick="app.openSettingsModal()" class="px-3 py-1.5 rounded bg-cyber-cyan/10 border border-cyber-border text-xs text-cyber-cyan hover:bg-cyber-cyan/20 transition flex items-center gap-2">
+                <i class="fa-solid fa-sliders"></i>
+                <span class="hidden sm:inline">EINSTELLUNGEN</span>
+            </button>
+            <div class="text-right font-mono">
+                <div id="clockTime" class="text-sm font-bold text-cyber-cyan tracking-wider">00:00:00</div>
+                <div id="clockDate" class="text-[10px] text-slate-400">01. JAN 2026</div>
+            </div>
+        </div>
+    </header>
+
+    <main class="relative z-20 flex-1 flex flex-col lg:flex-row gap-4 p-4 max-w-[1920px] w-full mx-auto overflow-hidden">
+        
+        <!-- Left Navigation Panel -->
+        <aside class="w-full lg:w-64 flex-shrink-0 flex lg:flex-col gap-2 overflow-x-auto lg:overflow-y-auto pb-2 lg:pb-0">
+            <button onclick="app.switchTab('hud')" id="nav-hud" class="nav-btn active flex items-center gap-3 px-4 py-3 rounded hud-border bg-cyber-cyan/20 border-cyber-cyan text-cyber-cyan font-rajdhani font-semibold tracking-wider text-sm whitespace-nowrap transition">
+                <i class="fa-solid fa-border-all w-5 text-center"></i> MAIN HUD
+            </button>
+            <button onclick="app.switchTab('chat')" id="nav-chat" class="nav-btn flex items-center gap-3 px-4 py-3 rounded hud-border bg-cyber-card border-cyber-border text-slate-300 hover:text-cyber-cyan font-rajdhani font-semibold tracking-wider text-sm whitespace-nowrap transition">
+                <i class="fa-solid fa-comments w-5 text-center"></i> AI CHAT ASSISTANT
+            </button>
+            <button onclick="app.switchTab('codelab')" id="nav-codelab" class="nav-btn flex items-center gap-3 px-4 py-3 rounded hud-border bg-cyber-card border-cyber-border text-slate-300 hover:text-cyber-cyan font-rajdhani font-semibold tracking-wider text-sm whitespace-nowrap transition">
+                <i class="fa-solid fa-code w-5 text-center"></i> CODE LAB & PREVIEW
+            </button>
+            <button onclick="app.switchTab('projects')" id="nav-projects" class="nav-btn flex items-center gap-3 px-4 py-3 rounded hud-border bg-cyber-card border-cyber-border text-slate-300 hover:text-cyber-cyan font-rajdhani font-semibold tracking-wider text-sm whitespace-nowrap transition">
+                <i class="fa-solid fa-diagram-project w-5 text-center"></i> PROJEKT MANAGER
+            </button>
+            <button onclick="app.switchTab('files')" id="nav-files" class="nav-btn flex items-center gap-3 px-4 py-3 rounded hud-border bg-cyber-card border-cyber-border text-slate-300 hover:text-cyber-cyan font-rajdhani font-semibold tracking-wider text-sm whitespace-nowrap transition">
+                <i class="fa-solid fa-folder-open w-5 text-center"></i> FILES REPOSITORY
+            </button>
+            <button onclick="app.switchTab('tools')" id="nav-tools" class="nav-btn flex items-center gap-3 px-4 py-3 rounded hud-border bg-cyber-card border-cyber-border text-slate-300 hover:text-cyber-cyan font-rajdhani font-semibold tracking-wider text-sm whitespace-nowrap transition">
+                <i class="fa-solid fa-toolbox w-5 text-center"></i> UTILITY TOOLS
+            </button>
+            <button onclick="app.switchTab('settings')" id="nav-settings" class="nav-btn flex items-center gap-3 px-4 py-3 rounded hud-border bg-cyber-card border-cyber-border text-slate-300 hover:text-cyber-cyan font-rajdhani font-semibold tracking-wider text-sm whitespace-nowrap transition">
+                <i class="fa-solid fa-gear w-5 text-center"></i> EINSTELLUNGEN
+            </button>
+        </aside>
+
+        <section class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+            
+            <!-- 1. TAB: MAIN COMMAND HUD -->
+            <div id="tabContent-hud" class="tab-pane flex-1 flex flex-col gap-4">
+                <!-- Holographic Reactor Core Section -->
+                <div class="hud-border bg-cyber-card rounded-lg p-6 flex flex-col items-center justify-center relative min-h-[360px] overflow-hidden">
+                    <div class="absolute top-3 left-4 text-xs font-orbitron text-cyber-cyan/70 tracking-widest flex items-center gap-2">
+                        <i class="fa-solid fa-atom animate-spin"></i> HOLOGRAPHIC QUANTUM CORE
+                    </div>
+                    
+                    <!-- Core Visualizer Canvas -->
+                    <canvas id="coreCanvas" width="300" height="300" class="my-2 cursor-pointer" onclick="app.toggleListening()"></canvas>
+
+                    <!-- Listening / Speech Status Indicator -->
+                    <div id="coreStatusText" class="font-orbitron text-sm font-bold tracking-widest text-cyber-cyan text-glow uppercase mt-2">
+                        KLICKE AUF DEN REAKTOR ODER SPRICH "JARVIS"
+                    </div>
+
+                    <!-- Audio Visualizer Spectrum Wave -->
+                    <canvas id="audioVisualizer" width="400" height="40" class="w-full max-w-md h-10 mt-3"></canvas>
+
+                    <!-- Voice Mic Control Button Bar -->
+                    <div class="flex items-center gap-4 mt-4">
+                        <button id="micToggleBtn" onclick="app.toggleListening()" class="px-6 py-2 rounded-full bg-cyber-cyan/20 border border-cyber-cyan text-cyber-cyan font-bold font-rajdhani tracking-wider hover:bg-cyber-cyan hover:text-black transition flex items-center gap-2 shadow-[0_0_15px_rgba(0,243,255,0.3)]">
+                            <i class="fa-solid fa-microphone"></i>
+                            <span id="micBtnText">SPRACHSTEUERUNG STARTEN</span>
+                        </button>
+                        <button onclick="app.speakText('J.A.R.V.I.S. System bereit und alle Module online.')" class="p-2 rounded-full bg-cyber-card border border-cyber-border text-cyber-cyan hover:bg-cyber-cyan/20 transition" title="Audio-Test">
+                            <i class="fa-solid fa-volume-high"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Command Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <button onclick="app.executeQuickCommand('Systemstatus Berichten')" class="p-3 rounded hud-border bg-cyber-card hover:bg-cyber-cyan/10 transition text-left">
+                        <i class="fa-solid fa-chart-line text-cyber-cyan text-lg mb-1"></i>
+                        <div class="text-xs font-bold font-orbitron text-slate-200">SYSTEM STATUS</div>
+                        <div class="text-[10px] text-slate-400">Diagnose durchführen</div>
+                    </button>
+                    <button onclick="app.executeQuickCommand('Erstelle ein HTML Dashboard Template')" class="p-3 rounded hud-border bg-cyber-card hover:bg-cyber-cyan/10 transition text-left">
+                        <i class="fa-solid fa-code text-cyber-green text-lg mb-1"></i>
+                        <div class="text-xs font-bold font-orbitron text-slate-200">CODE GENERATOR</div>
+                        <div class="text-[10px] text-slate-400">Live Web App Bauen</div>
+                    </button>
+                    <button onclick="app.executeQuickCommand('Fasse die neuesten Tech News zusammen')" class="p-3 rounded hud-border bg-cyber-card hover:bg-cyber-cyan/10 transition text-left">
+                        <i class="fa-solid fa-newspaper text-cyber-orange text-lg mb-1"></i>
+                        <div class="text-xs font-bold font-orbitron text-slate-200">CYBER NEWS</div>
+                        <div class="text-[10px] text-slate-400">KI & Tech Briefing</div>
+                    </button>
+                    <button onclick="app.clearChatHistory()" class="p-3 rounded hud-border bg-cyber-card hover:bg-cyber-red/10 transition text-left">
+                        <i class="fa-solid fa-trash-can text-cyber-red text-lg mb-1"></i>
+                        <div class="text-xs font-bold font-orbitron text-slate-200">CLEAR MEMORY</div>
+                        <div class="text-[10px] text-slate-400">Chat History löschen</div>
+                    </button>
+                </div>
+            </div>
+
+            <div id="tabContent-chat" class="tab-pane hidden flex-1 flex flex-col h-[70vh] lg:h-full hud-border bg-cyber-card rounded-lg overflow-hidden">
+                <div class="px-4 py-3 border-b border-cyber-border bg-slate-950/60 flex items-center justify-between">
+                    <span class="font-orbitron font-bold text-xs text-cyber-cyan tracking-wider">
+                        <i class="fa-solid fa-comments mr-2"></i>GEMINI NEURAL AI CONVERSATION
+                    </span>
+                    <button onclick="app.clearChatHistory()" class="text-xs text-slate-400 hover:text-cyber-red transition">
+                        <i class="fa-solid fa-broom mr-1"></i> Verlauf leeren
+                    </button>
+                </div>
+
+                <!-- Chat History Messages Window -->
+                <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-4 font-sans text-sm">
+                    <div class="flex items-start gap-3 bg-cyber-cyan/5 p-3 rounded border border-cyber-cyan/20">
+                        <div class="w-8 h-8 rounded bg-cyber-cyan/20 border border-cyber-cyan flex items-center justify-center text-cyber-cyan font-bold text-xs">
+                            JARVIS
+                        </div>
+                        <div class="flex-1">
+                            <div class="font-bold text-xs text-cyber-cyan font-orbitron mb-1">J.A.R.V.I.S.</div>
+                            <p class="text-slate-200 leading-relaxed">Guten Tag, Sir. Ich bin betriebsbereit. Wie kann ich Ihnen heute bei Ihren Projekten, Diagnosen oder Programmieraufgaben behilflich sein?</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Input Controls -->
+                <form onsubmit="app.handleChatSubmit(event)" class="p-3 border-t border-cyber-border bg-slate-950/80 flex items-center gap-2">
+                    <input type="text" id="chatInput" placeholder="Befehl oder Frage an JARVIS eingeben..." class="flex-1 bg-slate-900 border border-cyber-border rounded px-4 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-cyan font-sans">
+                    <button type="submit" class="px-5 py-2 bg-cyber-cyan/20 border border-cyber-cyan text-cyber-cyan rounded hover:bg-cyber-cyan hover:text-black font-bold text-sm transition">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+
+            <div id="tabContent-codelab" class="tab-pane hidden flex-1 flex flex-col gap-4 h-full">
+                <div class="flex items-center justify-between">
+                    <div class="font-orbitron text-xs font-bold text-cyber-cyan tracking-wider">
+                        <i class="fa-solid fa-laptop-code mr-2"></i>QUANTUM CODE LAB & SANDBOX
+                    </div>
+                    <button onclick="app.runLivePreview()" class="px-4 py-1.5 rounded bg-cyber-green/20 border border-cyber-green text-cyber-green hover:bg-cyber-green hover:text-black font-bold text-xs transition">
+                        <i class="fa-solid fa-play mr-1"></i> CODE AUSFÜHREN
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-[450px]">
+                    <!-- Editor -->
+                    <div class="hud-border bg-cyber-card rounded-lg flex flex-col overflow-hidden">
+                        <div class="px-3 py-2 bg-slate-950 border-b border-cyber-border text-xs font-mono text-slate-400">
+                            HTML / CSS / JS EDITOR
+                        </div>
+                        <textarea id="codeLabInput" class="flex-1 w-full bg-[#040d1a] p-3 font-mono text-xs text-cyber-cyan focus:outline-none resize-none leading-relaxed" spellcheck="false"><!-- JARVIS Live Code Sandbox -->
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { background: #08121e; color: #00f3ff; font-family: sans-serif; display: flex; flex-direction: column; items-center; justify-content: center; height: 100vh; margin: 0; text-align: center; }
+        h1 { text-shadow: 0 0 10px #00f3ff; }
+        button { background: #00f3ff; border: none; padding: 10px 20px; font-weight: bold; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>J.A.R.V.I.S. SANDBOX</h1>
+    <p>Live Code Rendering Engine bereit.</p>
+    <button onclick="alert('System Verbindung hergestellt!')">CLICK ME</button>
+</body>
+</html></textarea>
+                    </div>
+
+                    <!-- Live Frame Preview -->
+                    <div class="hud-border bg-cyber-card rounded-lg flex flex-col overflow-hidden">
+                        <div class="px-3 py-2 bg-slate-950 border-b border-cyber-border text-xs font-mono text-slate-400 flex justify-between items-center">
+                            <span>LIVE FRAME PREVIEW</span>
+                            <i class="fa-solid fa-globe text-cyber-cyan"></i>
+                        </div>
+                        <iframe id="codeLabPreview" class="flex-1 w-full bg-white border-none"></iframe>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tabContent-projects" class="tab-pane hidden flex-1 flex flex-col gap-4">
+                <div class="hud-border bg-cyber-card rounded-lg p-4 flex flex-col gap-4">
+                    <div class="flex items-center justify-between border-b border-cyber-border pb-3">
+                        <span class="font-orbitron font-bold text-xs text-cyber-cyan tracking-wider">
+                            <i class="fa-solid fa-folder-plus mr-2"></i>PROJEKT DOCK & LOKALE PROJEKTE
+                        </span>
+                        <button onclick="app.createNewProjectPrompt()" class="px-3 py-1.5 rounded bg-cyber-cyan/20 border border-cyber-cyan text-cyber-cyan hover:bg-cyber-cyan hover:text-black font-bold text-xs transition">
+                            <i class="fa-solid fa-plus mr-1"></i> NEUES PROJEKT
+                        </button>
+                    </div>
+                    <div id="projectsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Dynamic Project Cards Rendered Here -->
+                    </div>
+                </div>
+            </div>
+
+            <div id="tabContent-files" class="tab-pane hidden flex-1 flex flex-col gap-4">
+                <div class="hud-border bg-cyber-card rounded-lg p-4">
+                    <div class="flex items-center justify-between border-b border-cyber-border pb-3 mb-4">
+                        <span class="font-orbitron font-bold text-xs text-cyber-cyan tracking-wider">
+                            <i class="fa-solid fa-hard-drive mr-2"></i>VIRTUELLER DATEI SPEICHER
+                        </span>
+                        <label class="px-3 py-1.5 rounded bg-cyber-cyan/20 border border-cyber-cyan text-cyber-cyan hover:bg-cyber-cyan hover:text-black font-bold text-xs cursor-pointer transition">
+                            <i class="fa-solid fa-upload mr-1"></i> DATEI HOCHLADEN
+                            <input type="file" id="fileUploadInput" class="hidden" onchange="app.handleFileUpload(event)">
+                        </label>
+                    </div>
+                    <div id="filesList" class="space-y-2 font-mono text-xs">
+                        <!-- Dynamic Files List -->
+                    </div>
+                </div>
+            </div>
+
+            <div id="tabContent-tools" class="tab-pane hidden flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Tool 1: JSON Formatter -->
+                <div class="hud-border bg-cyber-card rounded-lg p-4 flex flex-col">
+                    <div class="font-orbitron font-bold text-xs text-cyber-cyan mb-3">
+                        <i class="fa-solid fa-code-compare mr-2"></i>JSON FORMATTER & VALIDATOR
+                    </div>
+                    <textarea id="jsonToolInput" class="h-32 bg-slate-900 border border-cyber-border rounded p-2 font-mono text-xs text-slate-200 mb-2" placeholder='{"test": "data"}'></textarea>
+                    <div class="flex gap-2">
+                        <button onclick="app.formatJson()" class="px-3 py-1 bg-cyber-cyan/20 border border-cyber-cyan text-cyber-cyan rounded text-xs font-bold hover:bg-cyber-cyan hover:text-black transition">Formatieren</button>
+                    </div>
+                </div>
+
+                <!-- Tool 2: Secure Quick Notes -->
+                <div class="hud-border bg-cyber-card rounded-lg p-4 flex flex-col">
+                    <div class="font-orbitron font-bold text-xs text-cyber-cyan mb-3">
+                        <i class="fa-solid fa-note-sticky mr-2"></i>SECURE QUANTUM NOTES
+                    </div>
+                    <textarea id="secureNotesInput" class="flex-1 bg-slate-900 border border-cyber-border rounded p-2 font-mono text-xs text-slate-200 resize-none min-h-[120px]" placeholder="Notizen werden automatisch im localStorage gespeichert..." oninput="app.saveNotes()"></textarea>
+                </div>
+            </div>
+
+            <div id="tabContent-settings" class="tab-pane hidden flex-1 flex flex-col gap-4">
+                <div class="hud-border bg-cyber-card rounded-lg p-6 space-y-6">
+                    <div class="font-orbitron font-bold text-sm text-cyber-cyan border-b border-cyber-border pb-3">
+                        <i class="fa-solid fa-sliders mr-2"></i>SYSTEM & KI KONFIGURATION
+                    </div>
+
+                    <!-- Gemini API Key Section -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold font-orbitron text-slate-200">GOOGLE GEMINI API KEY</label>
+                        <div class="flex gap-2">
+                            <input type="password" id="settingsApiKeyInput" class="flex-1 bg-slate-900 border border-cyber-border rounded px-3 py-2 text-sm text-cyber-cyan font-mono" placeholder="AIzaSy...">
+                            <button onclick="app.saveApiKeyFromSettings()" class="px-4 py-2 bg-cyber-cyan/20 border border-cyber-cyan text-cyber-cyan font-bold text-xs rounded hover:bg-cyber-cyan hover:text-black transition">
+                                SPEICHERN
+                            </button>
+                        </div>
+                        <p class="text-[11px] text-slate-400">
+                            Hole dir deinen kostenlosen API Key in Google AI Studio (<a href="https://aistudio.google.com/" target="_blank" class="text-cyber-cyan underline">aistudio.google.com</a>).
+                        </p>
+                    </div>
+
+                    <!-- Toggles & Sliders -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-cyber-border/50">
+                        <label class="flex items-center justify-between p-3 rounded bg-slate-900/60 border border-cyber-border/40 cursor-pointer">
+                            <span class="text-xs font-bold font-orbitron">Sprachausgabe (TTS)</span>
+                            <input type="checkbox" id="ttsToggle" class="accent-cyber-cyan w-4 h-4" checked onchange="app.updateSettings()">
+                        </label>
+                        <label class="flex items-center justify-between p-3 rounded bg-slate-900/60 border border-cyber-border/40 cursor-pointer">
+                            <span class="text-xs font-bold font-orbitron">Double-Clap Erkennung</span>
+                            <input type="checkbox" id="clapToggle" class="accent-cyber-cyan w-4 h-4" checked onchange="app.updateSettings()">
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <aside class="w-full lg:w-72 flex-shrink-0 flex flex-col gap-4">
+            
+            <!-- Hardware Monitor -->
+            <div class="hud-border bg-cyber-card rounded-lg p-4 space-y-4">
+                <div class="font-orbitron font-bold text-xs text-cyber-cyan tracking-wider flex items-center justify-between">
+                    <span><i class="fa-solid fa-microchip mr-2"></i>HARDWARE DIAGNOSTICS</span>
+                    <span class="w-2 h-2 rounded-full bg-cyber-green animate-ping"></span>
+                </div>
+
+                <!-- CPU Usage Meter -->
+                <div>
+                    <div class="flex justify-between text-xs font-mono mb-1">
+                        <span class="text-slate-400">CPU LOAD</span>
+                        <span id="cpuVal" class="text-cyber-cyan">18%</span>
+                    </div>
+                    <canvas id="cpuGraph" width="240" height="35" class="w-full h-9 bg-slate-950 rounded border border-cyber-border/30"></canvas>
+                </div>
+
+                <!-- Memory Usage Meter -->
+                <div>
+                    <div class="flex justify-between text-xs font-mono mb-1">
+                        <span class="text-slate-400">QUANTUM RAM</span>
+                        <span id="ramVal" class="text-cyber-green">4.2 / 16 GB</span>
+                    </div>
+                    <canvas id="ramGraph" width="240" height="35" class="w-full h-9 bg-slate-950 rounded border border-cyber-border/30"></canvas>
+                </div>
+            </div>
+
+            <!-- Weather Widget -->
+            <div class="hud-border bg-cyber-card rounded-lg p-4 flex items-center justify-between">
+                <div>
+                    <div class="font-orbitron font-bold text-xs text-cyber-cyan">WETTER STATION</div>
+                    <div id="weatherLocation" class="text-xs text-slate-400 font-mono">Bremen, DE</div>
+                    <div id="weatherTemp" class="text-xl font-bold text-slate-100 font-orbitron mt-1">18°C</div>
+                </div>
+                <div id="weatherIcon" class="text-3xl text-cyber-cyan">
+                    <i class="fa-solid fa-cloud-sun"></i>
+                </div>
+            </div>
+
+            <!-- Cyber Security News Briefing -->
+            <div class="hud-border bg-cyber-card rounded-lg p-4 flex-1 flex flex-col">
+                <div class="font-orbitron font-bold text-xs text-cyber-cyan mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-rss"></i> SYSTEM FEED & CYBER NEWS
+                </div>
+                <div id="newsFeed" class="space-y-3 text-xs font-sans text-slate-300 overflow-y-auto max-h-48">
+                    <div class="border-l-2 border-cyber-cyan pl-2">
+                        <div class="text-[10px] text-cyber-cyan font-mono">14:00 // TELEMETRIE</div>
+                        <p class="leading-tight">Gemini 3 Flash Neural Engine erfolgreich synchronisiert.</p>
+                    </div>
+                    <div class="border-l-2 border-cyber-green pl-2">
+                        <div class="text-[10px] text-cyber-green font-mono">13:45 // SECURITY</div>
+                        <p class="leading-tight">Double-Clap Audio-Stream initialisiert und aktiv.</p>
+                    </div>
+                </div>
+            </div>
+
+        </aside>
+
+    </main>
+
+    <!-- API Key Missing Modal Dialog -->
+    <div id="apiKeyModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="hud-border bg-cyber-card max-w-md w-full p-6 rounded-lg space-y-4">
+            <div class="flex items-center gap-3 text-cyber-cyan border-b border-cyber-border pb-3">
+                <i class="fa-solid fa-triangle-exclamation text-xl text-cyber-orange"></i>
+                <h3 class="font-orbitron font-bold text-sm">GEMINI API KEY ERFORDERLICH</h3>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+                Willkommen bei J.A.R.V.I.S. Um den echten KI-Chat und Sprachfunktionen zu aktivieren, benötigst du einen kostenlosen Google Gemini API-Key.
+            </p>
+            <div>
+                <input type="password" id="modalApiKeyInput" placeholder="Füge deinen Gemini API Key hier ein..." class="w-full bg-slate-900 border border-cyber-border rounded px-3 py-2 text-sm text-cyber-cyan font-mono focus:outline-none focus:border-cyber-cyan">
+            </div>
+            <div class="flex items-center justify-between pt-2">
+                <a href="https://aistudio.google.com/" target="_blank" class="text-xs text-cyber-cyan underline">Key bei Google AI Studio holen &rarr;</a>
+                <button onclick="app.saveApiKeyFromModal()" class="px-5 py-2 bg-cyber-cyan border border-cyber-cyan text-black font-bold text-xs rounded hover:bg-cyber-cyan/80 transition">
+                    VERBINDEN
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class CyberAudioSFX {
+            constructor() {
+                this.ctx = null;
+            }
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+            beep(freq = 800, type = 'sine', duration = 0.08, vol = 0.1) {
+                if (!this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.00001, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch(e){}
+            }
+            click() { this.beep(1200, 'sine', 0.04, 0.05); }
+            boot() {
+                this.beep(400, 'triangle', 0.2, 0.1);
+                setTimeout(() => this.beep(800, 'sine', 0.3, 0.15), 150);
+            }
+            alert() {
+                this.beep(300, 'sawtooth', 0.2, 0.2);
+            }
+        }
+
+        class JarvisCoreVisualizer {
+            constructor(canvasId) {
+                this.canvas = document.getElementById(canvasId);
+                this.ctx = this.canvas.getContext('2d');
+                this.angle = 0;
+                this.state = 'IDLE'; // IDLE, LISTENING, THINKING, RESPONDING, ERROR
+                this.animate();
+            }
+
+            setState(newState) {
+                this.state = newState;
+            }
+
+            animate() {
+                requestAnimationFrame(() => this.animate());
+                if (!this.canvas) return;
+
+                const ctx = this.ctx;
+                const w = this.canvas.width;
+                const h = this.canvas.height;
+                const cx = w / 2;
+                const cy = h / 2;
+
+                ctx.clearRect(0, 0, w, h);
+
+                this.angle += 0.02;
+
+                let color = '#00f3ff';
+                if (this.state === 'LISTENING') color = '#00ff66';
+                if (this.state === 'THINKING') color = '#ffaa00';
+                if (this.state === 'RESPONDING') color = '#00f3ff';
+                if (this.state === 'ERROR') color = '#ff3366';
+
+                // Outer Rotating Ring
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(this.angle);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, 0, 90, 0, Math.PI * 1.5);
+                ctx.stroke();
+
+                ctx.rotate(-this.angle * 2);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1;
+                ctx.setLineDash([5, 10]);
+                ctx.beginPath();
+                ctx.arc(0, 0, 70, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+
+                // Pulsing Center Core Orb
+                const pulse = Math.sin(this.angle * 3) * 8;
+                const gradient = ctx.createRadialGradient(cx, cy, 5, cx, cy, 35 + pulse);
+                gradient.addColorStop(0, '#ffffff');
+                gradient.addColorStop(0.4, color);
+                gradient.addColorStop(1, 'transparent');
+
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(cx, cy, 40 + pulse, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        class CyberBackground {
+            constructor(canvasId) {
+                this.canvas = document.getElementById(canvasId);
+                this.ctx = this.canvas.getContext('2d');
+                this.particles = [];
+                this.resize();
+                this.initParticles();
+                window.addEventListener('resize', () => this.resize());
+                this.animate();
+            }
+
+            resize() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+            }
+
+            initParticles() {
+                this.particles = [];
+                const count = Math.floor((this.canvas.width * this.canvas.height) / 18000);
+                for (let i = 0; i < count; i++) {
+                    this.particles.push({
+                        x: Math.random() * this.canvas.width,
+                        y: Math.random() * this.canvas.height,
+                        vx: (Math.random() - 0.5) * 0.4,
+                        vy: (Math.random() - 0.5) * 0.4,
+                        size: Math.random() * 2 + 1
+                    });
+                }
+            }
+
+            animate() {
+                requestAnimationFrame(() => this.animate());
+                const ctx = this.ctx;
+                ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                ctx.fillStyle = 'rgba(0, 243, 255, 0.3)';
+                this.particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (p.x < 0) p.x = this.canvas.width;
+                    if (p.x > this.canvas.width) p.x = 0;
+                    if (p.y < 0) p.y = this.canvas.height;
+                    if (p.y > this.canvas.height) p.y = 0;
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            }
+        }
+
+        class JarvisApp {
+            constructor() {
+                this.sfx = new CyberAudioSFX();
+                this.bg = null;
+                this.coreVis = null;
+                this.apiKey = localStorage.getItem('jarvis_gemini_api_key') || '';
+                this.chatHistory = [];
+                this.isListening = false;
+                this.speechRecognition = null;
+                this.speechSynth = window.speechSynthesis;
+                
+                this.init();
+            }
+
+            init() {
+                // Initialize background canvas
+                this.bg = new CyberBackground('bgCanvas');
+                this.coreVis = new JarvisCoreVisualizer('coreCanvas');
+
+                // Update clock
+                setInterval(() => this.updateClock(), 1000);
+                this.updateClock();
+
+                // Check API key UI state
+                this.checkApiKeyStatus();
+
+                // Setup Voice Recognition
+                this.setupSpeechRecognition();
+
+                // Setup Hardware Monitor Simulation
+                this.setupHardwareMonitors();
+
+                // Render projects & files
+                this.renderProjects();
+                this.renderFiles();
+
+                // Load saved notes
+                const savedNotes = localStorage.getItem('jarvis_notes');
+                if (savedNotes) {
+                    document.getElementById('secureNotesInput').value = savedNotes;
+                }
+
+                // Run boot progress
+                this.runBootSequence();
+            }
+
+            runBootSequence() {
+                const logs = [
+                    "> Initialisiere Quantum Core...",
+                    "> Lade Neuro-Synapsen Matrix...",
+                    "> Verfiziere Gemini AI Link...",
+                    "> Schalte Web Speech API frei...",
+                    "> System diagnostics complete. Bereit."
+                ];
+                let step = 0;
+                const progressBar = document.getElementById('bootProgressBar');
+                const logElem = document.getElementById('bootLog');
+
+                const interval = setInterval(() => {
+                    step++;
+                    progressBar.style.width = `${(step / logs.length) * 100}%`;
+                    logElem.innerHTML += `<p>${logs[step - 1]}</p>`;
+                    this.sfx.beep(600 + step * 100, 'sine', 0.05, 0.05);
+
+                    if (step >= logs.length) {
+                        clearInterval(interval);
+                        document.getElementById('startSysBtn').classList.remove('hidden');
+                    }
+                }, 400);
+            }
+
+            completeBoot() {
+                this.sfx.init();
+                this.sfx.boot();
+                const bootScreen = document.getElementById('bootScreen');
+                bootScreen.style.opacity = '0';
+                setTimeout(() => bootScreen.classList.add('hidden'), 700);
+
+                if (!this.apiKey) {
+                    setTimeout(() => this.openApiKeyModal(), 1000);
+                } else {
+                    this.speakText("Willkommen zurück, Sir. JARVIS Online.");
+                }
+            }
+
+            updateClock() {
+                const now = new Date();
+                document.getElementById('clockTime').innerText = now.toLocaleTimeString('de-DE');
+                document.getElementById('clockDate').innerText = now.toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+            }
+
+            checkApiKeyStatus() {
+                const badge = document.getElementById('headerApiKeyStatus');
+                if (this.apiKey) {
+                    badge.innerText = "GÜLTIG";
+                    badge.className = "text-cyber-green";
+                    document.getElementById('settingsApiKeyInput').value = this.apiKey;
+                } else {
+                    badge.innerText = "FEHLT";
+                    badge.className = "text-cyber-red";
+                }
+            }
+
+            openApiKeyModal() {
+                document.getElementById('apiKeyModal').classList.remove('hidden');
+            }
+
+            closeApiKeyModal() {
+                document.getElementById('apiKeyModal').classList.add('hidden');
+            }
+
+            saveApiKeyFromModal() {
+                const key = document.getElementById('modalApiKeyInput').value.trim();
+                if (key) {
+                    this.apiKey = key;
+                    localStorage.setItem('jarvis_gemini_api_key', key);
+                    this.checkApiKeyStatus();
+                    this.closeApiKeyModal();
+                    this.speakText("API Schlüssel erfolgreich verifiziert.");
+                }
+            }
+
+            saveApiKeyFromSettings() {
+                const key = document.getElementById('settingsApiKeyInput').value.trim();
+                if (key) {
+                    this.apiKey = key;
+                    localStorage.setItem('jarvis_gemini_api_key', key);
+                    this.checkApiKeyStatus();
+                    this.sfx.click();
+                }
+            }
+
+            switchTab(tabId) {
+                this.sfx.click();
+                document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
+                document.querySelectorAll('.nav-btn').forEach(el => {
+                    el.classList.remove('bg-cyber-cyan/20', 'border-cyber-cyan', 'text-cyber-cyan');
+                    el.classList.add('bg-cyber-card', 'border-cyber-border', 'text-slate-300');
+                });
+
+                document.getElementById(`tabContent-${tabId}`).classList.remove('hidden');
+                const activeNav = document.getElementById(`nav-${tabId}`);
+                if (activeNav) {
+                    activeNav.classList.remove('bg-cyber-card', 'border-cyber-border', 'text-slate-300');
+                    activeNav.classList.add('bg-cyber-cyan/20', 'border-cyber-cyan', 'text-cyber-cyan');
+                }
+            }
+
+            setupSpeechRecognition() {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition) {
+                    console.warn("Speech Recognition API wird von diesem Browser nicht unterstützt.");
+                    return;
+                }
+
+                this.speechRecognition = new SpeechRecognition();
+                this.speechRecognition.lang = 'de-DE';
+                this.speechRecognition.continuous = false;
+                this.speechRecognition.interimResults = false;
+
+                this.speechRecognition.onstart = () => {
+                    this.isListening = true;
+                    this.coreVis.setState('LISTENING');
+                    document.getElementById('headerMicStatus').innerText = "AKTIV";
+                    document.getElementById('headerMicStatus').className = "text-cyber-green";
+                    document.getElementById('micBtnText').innerText = "ZUHÖREN...";
+                    document.getElementById('coreStatusText').innerText = "J.A.R.V.I.S. HÖRT ZU...";
+                };
+
+                this.speechRecognition.onresult = (event) => {
+                    const text = event.results[0][0].transcript;
+                    document.getElementById('coreStatusText').innerText = `ERKANNT: "${text}"`;
+                    this.processUserCommand(text);
+                };
+
+                this.speechRecognition.onerror = () => {
+                    this.stopListening();
+                };
+
+                this.speechRecognition.onend = () => {
+                    this.stopListening();
+                };
+            }
+
+            toggleListening() {
+                this.sfx.click();
+                if (this.isListening) {
+                    this.stopListening();
+                } else {
+                    if (this.speechRecognition) {
+                        try {
+                            this.speechRecognition.start();
+                        } catch(e) {
+                            this.stopListening();
+                        }
+                    }
+                }
+            }
+
+            stopListening() {
+                this.isListening = false;
+                this.coreVis.setState('IDLE');
+                document.getElementById('headerMicStatus').innerText = "INAKTIV";
+                document.getElementById('headerMicStatus').className = "text-slate-400";
+                document.getElementById('micBtnText').innerText = "SPRACHSTEUERUNG STARTEN";
+            }
+
+            speakText(text) {
+                const ttsEnabled = document.getElementById('ttsToggle')?.checked;
+                if (!ttsEnabled || !this.speechSynth) return;
+
+                this.speechSynth.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'de-DE';
+                utterance.rate = 1.0;
+                utterance.pitch = 0.95;
+
+                utterance.onstart = () => {
+                    this.coreVis.setState('RESPONDING');
+                };
+
+                utterance.onend = () => {
+                    this.coreVis.setState('IDLE');
+                };
+
+                this.speechSynth.speak(utterance);
+            }
+
+            async processUserCommand(promptText) {
+                if (!this.apiKey) {
+                    this.openApiKeyModal();
+                    return;
+                }
+
+                this.coreVis.setState('THINKING');
+                this.appendChatMessage('USER', promptText);
+
+                // Add to Gemini prompt history
+                this.chatHistory.push({ role: 'user', parts: [{ text: promptText }] });
+
+                try {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${this.apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: this.chatHistory,
+                            systemInstruction: {
+                                parts: [{ text: "Du bist J.A.R.V.I.S., eine hochintelligente KI. Antworte präzise, hilfsbereit und professionell im Tonfall einer modernen Assistenz auf Deutsch." }]
+                            }
+                        })
+                    });
+
+                    const data = await response.json();
+                    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Entschuldigung, Sir. Ich konnte die Antwort nicht verarbeiten.";
+
+                    this.chatHistory.push({ role: 'model', parts: [{ text: reply }] });
+                    this.appendChatMessage('JARVIS', reply);
+                    this.speakText(reply);
+
+                } catch (err) {
+                    this.coreVis.setState('ERROR');
+                    this.appendChatMessage('JARVIS', "Fehler bei der Verbindung zur Neural Matrix. Bitte überprüfe deinen API Key.");
+                }
+            }
+
+            appendChatMessage(sender, text) {
+                const container = document.getElementById('chatMessages');
+                const isUser = sender === 'USER';
+
+                const msgDiv = document.createElement('div');
+                msgDiv.className = `flex items-start gap-3 p-3 rounded border ${isUser ? 'bg-cyber-card border-cyber-border/40 ml-8' : 'bg-cyber-cyan/5 border-cyber-cyan/20 mr-8'}`;
+
+                msgDiv.innerHTML = `
+                    <div class="w-8 h-8 rounded ${isUser ? 'bg-slate-800 text-slate-300' : 'bg-cyber-cyan/20 text-cyber-cyan'} border border-cyber-border flex items-center justify-center font-bold text-xs">
+                        ${isUser ? 'YOU' : 'JARVIS'}
+                    </div>
+                    <div class="flex-1">
+                        <div class="font-bold text-xs ${isUser ? 'text-slate-400' : 'text-cyber-cyan'} font-orbitron mb-1">${sender}</div>
+                        <p class="text-slate-200 leading-relaxed font-sans text-xs sm:text-sm whitespace-pre-wrap">${text}</p>
+                    </div>
+                `;
+
+                container.appendChild(msgDiv);
+                container.scrollTop = container.scrollHeight;
+            }
+
+            handleChatSubmit(e) {
+                e.preventDefault();
+                const input = document.getElementById('chatInput');
+                const text = input.value.trim();
+                if (text) {
+                    input.value = '';
+                    this.processUserCommand(text);
+                }
+            }
+
+            executeQuickCommand(cmd) {
+                this.switchTab('chat');
+                this.processUserCommand(cmd);
+            }
+
+            clearChatHistory() {
+                this.chatHistory = [];
+                document.getElementById('chatMessages').innerHTML = '';
+                this.sfx.click();
+            }
+
+            runLivePreview() {
+                const code = document.getElementById('codeLabInput').value;
+                const iframe = document.getElementById('codeLabPreview');
+                iframe.srcdoc = code;
+                this.sfx.click();
+            }
+
+            renderProjects() {
+                const grid = document.getElementById('projectsGrid');
+                const projects = JSON.parse(localStorage.getItem('jarvis_projects') || '[]');
+
+                if (projects.length === 0) {
+                    grid.innerHTML = `<div class="col-span-2 text-center text-xs text-slate-500 py-6">Keine lokalen Projekte vorhanden. Erstelle jetzt dein erstes Projekt.</div>`;
+                    return;
+                }
+
+                grid.innerHTML = projects.map((p, i) => `
+                    <div class="hud-border bg-slate-900/80 p-3 rounded flex flex-col justify-between">
+                        <div>
+                            <div class="font-orbitron font-bold text-xs text-cyber-cyan">${p.name}</div>
+                            <div class="text-[10px] text-slate-400 my-1">${p.desc}</div>
+                        </div>
+                        <div class="flex gap-2 mt-3">
+                            <button onclick="app.loadProjectToCodeLab(${i})" class="px-2 py-1 bg-cyber-cyan/20 border border-cyber-cyan text-cyber-cyan rounded text-[10px] font-bold hover:bg-cyber-cyan hover:text-black transition">IM CODE LAB ÖFFNEN</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            createNewProjectPrompt() {
+                const name = prompt("Projektname:");
+                if (name) {
+                    const desc = prompt("Kurze Beschreibung:") || "Keine Beschreibung";
+                    const projects = JSON.parse(localStorage.getItem('jarvis_projects') || '[]');
+                    projects.push({ name, desc, code: '<!-- Neuer Code -->' });
+                    localStorage.setItem('jarvis_projects', JSON.stringify(projects));
+                    this.renderProjects();
+                }
+            }
+
+            loadProjectToCodeLab(index) {
+                const projects = JSON.parse(localStorage.getItem('jarvis_projects') || '[]');
+                if (projects[index]) {
+                    document.getElementById('codeLabInput').value = projects[index].code;
+                    this.switchTab('codelab');
+                    this.runLivePreview();
+                }
+            }
+
+            renderFiles() {
+                const list = document.getElementById('filesList');
+                const files = JSON.parse(localStorage.getItem('jarvis_files') || '[]');
+
+                if (files.length === 0) {
+                    list.innerHTML = `<div class="text-slate-500 text-center py-4">Keine hochgeladenen Dateien im Speicher.</div>`;
+                    return;
+                }
+
+                list.innerHTML = files.map((f, i) => `
+                    <div class="flex items-center justify-between p-2 bg-slate-900/60 rounded border border-cyber-border/30">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-file-code text-cyber-cyan"></i>
+                            <span class="text-slate-200">${f.name}</span>
+                        </div>
+                        <span class="text-[10px] text-slate-400">${f.size} Bytes</span>
+                    </div>
+                `).join('');
+            }
+
+            handleFileUpload(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const files = JSON.parse(localStorage.getItem('jarvis_files') || '[]');
+                    files.push({ name: file.name, size: file.size });
+                    localStorage.setItem('jarvis_files', JSON.stringify(files));
+                    this.renderFiles();
+                }
+            }
+
+            formatJson() {
+                try {
+                    const raw = document.getElementById('jsonToolInput').value;
+                    const parsed = JSON.parse(raw);
+                    document.getElementById('jsonToolInput').value = JSON.stringify(parsed, null, 2);
+                    this.sfx.click();
+                } catch(e) {
+                    alert("Ungültiges JSON Format!");
+                }
+            }
+
+            saveNotes() {
+                const text = document.getElementById('secureNotesInput').value;
+                localStorage.setItem('jarvis_notes', text);
+            }
+
+            setupHardwareMonitors() {
+                const drawGraph = (canvasId, color) => {
+                    const canvas = document.getElementById(canvasId);
+                    if (!canvas) return;
+                    const ctx = canvas.getContext('2d');
+                    let points = Array(20).fill(15);
+
+                    setInterval(() => {
+                        points.shift();
+                        points.push(Math.floor(Math.random() * 25) + 5);
+
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.strokeStyle = color;
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        points.forEach((p, i) => {
+                            const x = (i / (points.length - 1)) * canvas.width;
+                            const y = canvas.height - p;
+                            if (i === 0) ctx.moveTo(x, y);
+                            else ctx.lineTo(x, y);
+                        });
+                        ctx.stroke();
+                    }, 1000);
+                };
+
+                drawGraph('cpuGraph', '#00f3ff');
+                drawGraph('ramGraph', '#00ff66');
+
+                // Update numerical values periodically
+                setInterval(() => {
+                    document.getElementById('cpuVal').innerText = `${Math.floor(Math.random() * 25 + 10)}%`;
+                }, 2000);
+            }
+
+            updateSettings() {
+                this.sfx.click();
+            }
+        }
+
+        let app;
+        window.addEventListener('DOMContentLoaded', () => {
+            app = new JarvisApp();
+        });
+    </script>
+</body>
+</html>
