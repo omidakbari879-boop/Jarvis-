@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JARVIS // Personal AI System</title>
+<style>
+:root{--c:#24efff;--bg:#02080d;--panel:rgba(2,18,27,.72)}
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:#bffaff;font:12px Arial,sans-serif}
+body{background:radial-gradient(circle at 50% 48%,#073447 0,#02080d 42%,#010407 100%)}
+#map{position:fixed;inset:-10%;opacity:.42;background-image:linear-gradient(#0ee5ff0d 1px,transparent 1px),linear-gradient(90deg,#0ee5ff0d 1px,transparent 1px);background-size:55px 55px;animation:map 18s linear infinite}
+#map:after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 25% 35%,transparent 0 9%,#19eaff14 9.5% 10%,transparent 10.5%),radial-gradient(ellipse at 65% 55%,transparent 0 13%,#19eaff12 13.5% 14%,transparent 14.5%)}@keyframes map{50%{transform:scale(1.04) translate(1%,-1%)}}
+#top{position:fixed;top:15px;left:22px;right:22px;display:flex;justify-content:space-between;align-items:center;z-index:5}.brand{font-size:clamp(32px,5vw,64px);font-weight:800;letter-spacing:9px;color:#76f7ff;text-shadow:0 0 18px #00eaff}.status{letter-spacing:2px;color:#65eaf5}.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#31ffd0;box-shadow:0 0 10px #31ffd0}
+.panel{position:fixed;background:var(--panel);border:1px solid #25dceb55;box-shadow:0 0 20px #00eaff10,inset 0 0 18px #00eaff08;backdrop-filter:blur(7px);padding:15px;z-index:4}.panel h3{margin:0 0 10px;color:#67f5ff;letter-spacing:2px;font-size:12px}
+#left{left:20px;top:100px;width:215px}#right{right:20px;top:100px;width:265px}#history{left:20px;bottom:18px;width:305px}#projects{right:20px;bottom:18px;width:235px}#news{left:50%;bottom:18px;transform:translateX(-50%);width:min(650px,52vw)}
+.metric{margin:12px 0}.mr{display:flex;justify-content:space-between;margin-bottom:5px}.bar{height:4px;background:#54e9ff16}.bar i{display:block;height:100%;background:var(--c);box-shadow:0 0 9px var(--c)}
+#clock{width:125px;height:125px;border:2px solid var(--c);border-radius:50%;margin:18px auto 5px;display:grid;place-items:center;font-size:21px;letter-spacing:2px;box-shadow:0 0 25px #00eaff30;position:relative}.small{font-size:10px;color:#69cbd4}
+.ring{position:fixed;left:50%;top:50%;width:min(45vw,520px);height:min(45vw,520px);border:1px solid #1defff33;border-radius:50%;transform:translate(-50%,-50%);animation:r 26s linear infinite;z-index:2}.ring:before,.ring:after{content:"";position:absolute;inset:16px;border:2px dashed #24efff55;border-radius:50%}.ring:after{inset:35px;border:2px solid transparent;border-right-color:var(--c);animation:rr 7s linear infinite}.r2{width:min(35vw,410px);height:min(35vw,410px);animation:rr 18s linear infinite}.r3{width:min(26vw,310px);height:min(26vw,310px);animation:r 12s linear infinite}@keyframes r{to{transform:translate(-50%,-50%) rotate(360deg)}}@keyframes rr{to{transform:translate(-50%,-50%) rotate(-360deg)}}
+#core{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(31vw,390px);height:min(31vw,390px);min-width:285px;min-height:285px;border:2px solid #24efffbb;border-radius:50%;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;z-index:3;background:radial-gradient(circle,#00bcd52b,#020f18e8 60%);box-shadow:0 0 40px #00eaff35,inset 0 0 35px #00eaff12;transition:.3s}#core.active{box-shadow:0 0 80px #00eaff88,inset 0 0 55px #00eaff25}.title{font-size:11px;letter-spacing:2px}.main{font-size:22px;color:#fff;text-shadow:0 0 12px #24efff;margin:8px}.wave{height:38px;display:flex;gap:4px;align-items:center}.wave i{width:4px;height:10px;background:var(--c);box-shadow:0 0 8px var(--c);animation:w 1s ease-in-out infinite}.wave i:nth-child(2){animation-delay:.1s}.wave i:nth-child(3){animation-delay:.2s}.wave i:nth-child(4){animation-delay:.3s}.wave i:nth-child(5){animation-delay:.4s}@keyframes w{50%{height:36px}}
+.feed{height:160px;overflow:hidden}.item{padding:8px 0;border-bottom:1px solid #2cecff18}.item b{display:block;color:#73f5ff;margin-bottom:3px}.row{display:flex;justify-content:space-between;margin:7px 0}.project{padding:8px;margin:7px 0;border:1px solid #26e8ff22}.project b{color:#fff}
+#mic{position:fixed;left:50%;top:calc(50% + min(22vw,255px));transform:translateX(-50%);z-index:8;background:#031721;color:#72f7ff;border:1px solid var(--c);padding:9px 16px;cursor:pointer}#mic:hover{background:#063341}
+#toast{position:fixed;top:14%;left:50%;transform:translate(-50%,-20px);opacity:0;z-index:10;border:1px solid var(--c);background:#03151dcc;padding:11px 22px;color:#fff;letter-spacing:2px;transition:.35s}#toast.show{opacity:1;transform:translate(-50%,0)}
+@media(max-width:900px){#left,#right,#history,#projects{display:none}#news{width:82vw}.brand{font-size:30px}.status{display:none}}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<header id="top"><span class="small">STARK SYSTEM // SECURE CHANNEL</span><div class="brand">JARVIS</div><span class="status"><i class="dot"></i> GLOBAL NETWORK: ONLINE</span></header>
+<section id="left" class="panel"><h3>SYSTEM STATUS</h3>
+<div class="metric"><div class="mr"><span>CPU</span><span id="cpu">42%</span></div><div class="bar"><i id="cpub"></i></div></div>
+<div class="metric"><div class="mr"><span>RAM</span><span id="ram">61%</span></div><div class="bar"><i id="ramb"></i></div></div>
+<div class="row"><span>NETWORK</span><span>ONLINE</span></div><div class="row"><span>MIC</span><span id="micstate">READY</span></div>
+<div id="clock">--:--:--</div><div class="small" id="date" style="text-align:center"></div></section>
+<section id="right" class="panel"><h3>GLOBAL FEED</h3><div class="feed" id="feed"><div class="item"><b>JARVIS</b>System initialized.</div><div class="item"><b>NETWORK</b>Secure connection established.</div><div class="item"><b>AUDIO</b>Acoustic trigger ready.</div></div><h3>INFORMATION</h3><div class="small">Knowledge Base: READY</div><div class="small">Internet Module: READY</div></section>
+<div class="ring"></div><div class="ring r2"></div><div class="ring r3"></div>
+<main id="core"><div class="title">ACOUSTIC DETECTION SYSTEM</div><div class="wave"><i></i><i></i><i></i><i></i><i></i></div><div class="main" id="response">READY</div><div class="small" id="sub">2× klatschen oder Mikrofon aktivieren</div></main>
+<section id="history" class="panel"><h3>COMMAND HISTORY</h3><div id="log" class="small">JARVIS: System online.<br>JARVIS: Awaiting command...<br></div></section>
+<section id="projects" class="panel"><h3>PROJECTS</h3><div class="project"><b>JARVIS CORE</b><br>ONLINE</div><div class="project"><b>WEB BUILDER</b><br>HTML / CSS / JS</div><div class="project"><b>TOOLS</b><br>READY</div></section>
+<section id="news" class="panel"><div class="row"><span>JARVIS CORE</span><span>60 FPS</span></div><div class="small">2× CLAP: <span id="clap">NOT STARTED</span> | VOICE: <span id="voice">OFF</span></div></section>
+<button id="mic">ACTIVATE MICROPHONE</button><div id="toast"></div>
+<script>
+const $=x=>document.getElementById(x);let audio=null,analyser=null,data=null,last=0,claps=[],detecting=false;
+function clock(){let d=new Date();$('clock').textContent=d.toLocaleTimeString('de-DE',{hour12:false});$('date').textContent=d.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}setInterval(clock,1000);clock();
+let t=0;function stats(){t+=.03;let c=Math.round(48+Math.sin(t)*18+Math.random()*5),r=Math.round(60+Math.sin(t*.6)*9);$('cpu').textContent=c+'%';$('ram').textContent=r+'%';$('cpub').style.width=c+'%';$('ramb').style.width=r+'%';requestAnimationFrame(stats)}stats();
+function log(s){$('log').innerHTML+='JARVIS: '+s+'<br>';$('log').scrollTop=$('log').scrollHeight}
+function toast(s){$('toast').textContent=s;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),2500)}
+function activate(){ $('core').classList.add('active');$('micstate').textContent='LISTENING';$('voice').textContent='ACTIVE';$('clap').textContent='2 CLAPS DETECTED';$('response').textContent='JA, MEISTER.';$('sub').textContent='WAS GIBT ES?';toast('JA, MEISTER. WAS GIBT ES?');log('2 Klatscher erkannt.');try{let u=new SpeechSynthesisUtterance('Ja, Meister, was gibt es?');u.lang='de-DE';u.rate=.88;u.pitch=.65;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}setTimeout(()=>{$('core').classList.remove('active');$('micstate').textContent='READY';$('voice').textContent='READY';$('response').textContent='READY';$('sub').textContent='2× klatschen oder Mikrofon aktivieren'},3200)}
+async function startMic(){if(!window.isSecureContext&&!['localhost','127.0.0.1'].includes(location.hostname)){toast('HTTPS oder localhost benötigt');return}try{let stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});audio=new AudioContext();await audio.resume();let src=audio.createMediaStreamSource(stream);analyser=audio.createAnalyser();analyser.fftSize=512;src.connect(analyser);data=new Uint8Array(analyser.fftSize);detecting=true;$('mic').textContent='MICROPHONE ACTIVE — STOP';$('clap').textContent='LISTENING FOR 2 CLAPS';$('micstate').textContent='LISTENING';log('Mikrofon verbunden.');detect()}catch(e){toast(e.name==='NotAllowedError'?'Mikrofon-Berechtigung fehlt':'Mikrofon konnte nicht verbunden werden');log('Mikrofonfehler: '+e.name)}}
+function detect(){if(!detecting||!analyser)return;analyser.getByteTimeDomainData(data);let s=0;for(let v of data){let x=(v-128)/128;s+=x*x}let rms=Math.sqrt(s/data.length),n=performance.now();if(rms>.30&&n-last>220){last=n;claps.push(n);claps=claps.filter(x=>n-x<950);if(claps.length>=2){claps=[];activate()}}requestAnimationFrame(detect)}
+$('mic').onclick=()=>{if(audio){detecting=false;audio.close();audio=null;analyser=null;$('mic').textContent='ACTIVATE MICROPHONE';$('clap').textContent='NOT STARTED';$('micstate').textContent='READY';log('Mikrofon getrennt.')}else startMic()};
+let items=[['NETWORK','Heartbeat nominal.'],['SYSTEM','Telemetry synchronized.'],['PROJECT','JARVIS modules online.'],['AUDIO','Acoustic trigger armed.'],['SEARCH','Knowledge base ready.']];let i=0;setInterval(()=>{let [a,b]=items[i++%items.length],d=document.createElement('div');d.className='item';d.innerHTML='<b>'+a+'</b>'+b;$('feed').prepend(d);while($('feed').children.length>6)$('feed').lastChild.remove()},3000);
+</script>
+</body></html>
